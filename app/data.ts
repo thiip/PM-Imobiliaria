@@ -37,7 +37,7 @@ export interface Installment {
   totalParcelas: number;
   dataVencimento: Date;
   valor: number;
-  status: 'VENCIDO' | 'A VENCER' | 'VENCE ESTE MÊS' | 'PENDENTE' | 'PAGO';
+  status: 'VENCIDO' | 'A VENCER' | 'VENCE ESTE MÊS' | 'PAGO';
   diasAtraso: number;
 }
 
@@ -550,10 +550,11 @@ export function getInstallmentKey(saleId: number, parcela: number): string {
 
 export function getPaidInstallments(): Set<string> {
   if (typeof window === 'undefined') return new Set();
-  const stored = localStorage.getItem('erp_paid_installments_v3');
+  const stored = localStorage.getItem('erp_paid_installments_v4');
   if (stored) return new Set(JSON.parse(stored));
-  // Pre-populate: mark only installments with due date before today as paid
+  // Pre-populate: mark all installments with due date up to and including today as paid
   const today = new Date();
+  today.setHours(23, 59, 59, 999); // Include all of today
   const allKeys = new Set<string>();
   const active = getActiveSales();
   for (const sale of active) {
@@ -561,7 +562,7 @@ export function getPaidInstallments(): Set<string> {
     const firstDate = new Date(sale.dataPrimeiraParcela + 'T00:00:00');
     for (let p = 0; p < sale.numParcelas; p++) {
       const dueDate = addMonths(firstDate, p);
-      if (dueDate < today) {
+      if (dueDate <= today) {
         allKeys.add(`${sale.id}-${p + 1}`);
       }
     }
@@ -572,7 +573,7 @@ export function getPaidInstallments(): Set<string> {
 
 export function savePaidInstallments(paid: Set<string>) {
   if (typeof window !== 'undefined') {
-    localStorage.setItem('erp_paid_installments_v3', JSON.stringify(Array.from(paid)));
+    localStorage.setItem('erp_paid_installments_v4', JSON.stringify(Array.from(paid)));
   }
 }
 
@@ -599,10 +600,8 @@ export function generateInstallments(paidSet?: Set<string>): Installment[] {
         status = 'VENCIDO';
       } else if (isSameMonth(dueDate, today) && dueDate.getFullYear() === today.getFullYear()) {
         status = 'VENCE ESTE MÊS';
-      } else if (diasAtraso >= -30) {
-        status = 'A VENCER';
       } else {
-        status = 'PENDENTE';
+        status = 'A VENCER';
       }
 
       installments.push({

@@ -261,7 +261,7 @@ export default function Retiradas() {
     <div style={{ padding: "28px 32px", maxWidth: 1500 }}>
       {/* Header */}
       <div className="animate-fade-in-up" style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 28, fontWeight: 800, fontFamily: "'DM Sans', sans-serif", color: "var(--text-primary)", marginBottom: 4 }}>
+        <h1 className="page-title" style={{ fontSize: 28, fontWeight: 800, fontFamily: "'DM Sans', sans-serif", color: "var(--text-primary)", marginBottom: 4 }}>
           Retiradas dos Sócios
         </h1>
         <p style={{ color: "var(--text-muted)", fontSize: 14 }}>
@@ -277,7 +277,7 @@ export default function Retiradas() {
               <DollarSign size={20} style={{ color: "var(--accent-emerald)" }} />
             </div>
           </div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1, marginBottom: 6, fontFamily: "'DM Sans', sans-serif" }}>
+          <div className="kpi-value-sm" style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1, marginBottom: 6, fontFamily: "'DM Sans', sans-serif" }}>
             {formatCurrency(totais.totalGeral)}
           </div>
           <div style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 500, marginBottom: 4 }}>Total Distribuído</div>
@@ -297,7 +297,7 @@ export default function Retiradas() {
                   {socio.percentual}%
                 </span>
               </div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1, marginBottom: 6, fontFamily: "'DM Sans', sans-serif" }}>
+              <div className="kpi-value-sm" style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1, marginBottom: 6, fontFamily: "'DM Sans', sans-serif" }}>
                 {formatCurrency(total)}
               </div>
               <div style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 500, marginBottom: 4 }}>{socio.nome}</div>

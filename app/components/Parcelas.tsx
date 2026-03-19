@@ -46,13 +46,12 @@ export default function Parcelas() {
     vencidas: filtered.filter(i => i.status === "VENCIDO").length,
     aVencer: filtered.filter(i => i.status === "A VENCER" || i.status === "VENCE ESTE MÊS").length,
     pagas: filtered.filter(i => i.status === "PAGO").length,
-    pendentes: filtered.filter(i => i.status === "PENDENTE").length,
     valorTotal: filtered.reduce((s, i) => s + i.valor, 0),
     valorVencido: filtered.filter(i => i.status === "VENCIDO").reduce((s, i) => s + i.valor, 0),
     valorPago: filtered.filter(i => i.status === "PAGO").reduce((s, i) => s + i.valor, 0),
   }), [filtered]);
 
-  const statusFilters = ["TODOS", "VENCIDO", "A VENCER", "VENCE ESTE MÊS", "PAGO", "PENDENTE"];
+  const statusFilters = ["TODOS", "VENCIDO", "A VENCER", "VENCE ESTE MÊS", "PAGO"];
 
   const togglePaid = (saleId: number, parcela: number) => {
     const key = `${saleId}-${parcela}`;
@@ -89,7 +88,7 @@ export default function Parcelas() {
   return (
     <div style={{ padding: "28px 32px" }}>
       <div className="animate-fade-in-up" style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 28, fontWeight: 800, fontFamily: "'DM Sans', sans-serif", color: "var(--text-primary)", marginBottom: 4 }}>
+        <h1 className="page-title" style={{ fontSize: 28, fontWeight: 800, fontFamily: "'DM Sans', sans-serif", color: "var(--text-primary)", marginBottom: 4 }}>
           Parcelas
         </h1>
         <p style={{ color: "var(--text-muted)", fontSize: 14 }}>
@@ -98,40 +97,35 @@ export default function Parcelas() {
       </div>
 
       {/* Summary cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 16, marginBottom: 24 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16, marginBottom: 16 }}>
         <div className="kpi-card red animate-fade-in-up stagger-1">
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
             <AlertTriangle size={16} style={{ color: "var(--accent-red)" }} />
             <span style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600 }}>Vencidas</span>
           </div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: "#F87171" }}>{summary.vencidas}</div>
-          <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>{formatCurrency(summary.valorVencido)}</div>
+          <div className="summary-value" style={{ fontSize: 24, fontWeight: 800, color: "#F87171" }}>{summary.vencidas}</div>
+          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>{formatCurrency(summary.valorVencido)}</div>
         </div>
         <div className="kpi-card amber animate-fade-in-up stagger-2">
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
             <Clock size={16} style={{ color: "var(--accent-amber)" }} />
             <span style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600 }}>A Vencer</span>
           </div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: "#FBBF24" }}>{summary.aVencer}</div>
+          <div className="summary-value" style={{ fontSize: 24, fontWeight: 800, color: "#FBBF24" }}>{summary.aVencer}</div>
         </div>
         <div className="kpi-card emerald animate-fade-in-up stagger-3">
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
             <CheckCircle2 size={16} style={{ color: "var(--accent-emerald)" }} />
             <span style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600 }}>Pagas</span>
           </div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: "#34D399" }}>{summary.pagas}</div>
-          <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>{formatCurrency(summary.valorPago)}</div>
+          <div className="summary-value" style={{ fontSize: 24, fontWeight: 800, color: "#34D399" }}>{summary.pagas}</div>
+          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>{formatCurrency(summary.valorPago)}</div>
         </div>
-        <div className="kpi-card blue animate-fade-in-up stagger-4">
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <CircleDot size={16} style={{ color: "var(--accent-blue)" }} />
-            <span style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600 }}>Pendentes</span>
-          </div>
-          <div style={{ fontSize: 24, fontWeight: 800 }}>{summary.pendentes}</div>
-        </div>
+      </div>
+      <div style={{ marginBottom: 24 }}>
         <div className="kpi-card purple animate-fade-in-up stagger-5">
           <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600, marginBottom: 8 }}>Valor Total</div>
-          <div style={{ fontSize: 22, fontWeight: 800 }}>{formatCurrency(summary.valorTotal)}</div>
+          <div className="summary-value-lg" style={{ fontSize: 22, fontWeight: 800 }}>{formatCurrency(summary.valorTotal)}</div>
         </div>
       </div>
 

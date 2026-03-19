@@ -390,15 +390,27 @@ input:focus, select:focus, textarea:focus { border-color: rgba(16,185,129,0.4); 
   .app-sidebar { display: none !important; }
 
   .kpi-card { padding: 16px; border-radius: 14px; }
+  .kpi-card .kpi-value { font-size: 20px !important; word-break: break-word; overflow-wrap: break-word; }
+  .kpi-card .kpi-value-sm { font-size: 16px !important; word-break: break-word; overflow-wrap: break-word; }
   .chart-container { padding: 16px; border-radius: 14px; }
-  .data-table tbody td { padding: 8px 10px; font-size: 12px; }
-  .data-table thead th { padding: 8px 10px; font-size: 10px; }
+  .data-table tbody td { padding: 8px 10px; font-size: 11px; white-space: normal !important; word-break: break-word; }
+  .data-table thead th { padding: 8px 10px; font-size: 9px; white-space: normal !important; }
   .filter-chip { padding: 5px 10px; font-size: 11px; }
   .btn-primary { padding: 8px 14px; font-size: 13px; }
+
+  /* Global mobile text overflow prevention */
+  .page-title { font-size: 22px !important; }
+  .summary-value { font-size: 18px !important; word-break: break-word; overflow-wrap: break-word; }
+  .summary-value-lg { font-size: 20px !important; word-break: break-word; overflow-wrap: break-word; }
 }
 
 @media (max-width: 480px) {
   .kpi-card { padding: 14px; border-radius: 10px; }
+  .kpi-card .kpi-value { font-size: 18px !important; }
+  .kpi-card .kpi-value-sm { font-size: 14px !important; }
   .chart-container { padding: 12px; }
   .search-input { font-size: 13px; padding: 8px 12px 8px 36px; }
+  .summary-value { font-size: 16px !important; }
+  .summary-value-lg { font-size: 18px !important; }
+  .page-title { font-size: 20px !important; }
 }

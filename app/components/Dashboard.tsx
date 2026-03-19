@@ -18,7 +18,14 @@ export default function Dashboard() {
   const lots = useMemo(() => getLots(), []);
   const activeSales = useMemo(() => getActiveSales(), []);
   const [installments, setInstallments] = useState<ReturnType<typeof generateInstallments>>([]);
+  const [isMobile, setIsMobile] = useState(false);
   useEffect(() => { setInstallments(generateInstallments()); }, []);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   const totalLotes = lots.length;
   const lotesVendidos = lots.filter(l => l.situacao === "VENDIDO").length;
@@ -111,7 +118,7 @@ export default function Dashboard() {
     <div style={{ padding: "28px 32px", maxWidth: 1500 }}>
       {/* Header */}
       <div className="animate-fade-in-up" style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 28, fontWeight: 800, fontFamily: "'DM Sans', sans-serif", color: "var(--text-primary)", marginBottom: 4 }}>
+        <h1 className="page-title" style={{ fontSize: 28, fontWeight: 800, fontFamily: "'DM Sans', sans-serif", color: "var(--text-primary)", marginBottom: 4 }}>
           Painel
         </h1>
         <p style={{ color: "var(--text-muted)", fontSize: 14 }}>
@@ -134,7 +141,7 @@ export default function Dashboard() {
                 <kpi.icon size={20} style={{ color: `var(--accent-${kpi.color})` }} />
               </div>
             </div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1, marginBottom: 6, fontFamily: "'DM Sans', sans-serif" }}>
+            <div className="kpi-value" style={{ fontSize: 28, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1, marginBottom: 6, fontFamily: "'DM Sans', sans-serif" }}>
               {kpi.value}
             </div>
             <div style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 500, marginBottom: 4 }}>{kpi.label}</div>
@@ -158,7 +165,7 @@ export default function Dashboard() {
                 <kpi.icon size={20} style={{ color: `var(--accent-${kpi.color})` }} />
               </div>
             </div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1, marginBottom: 6, fontFamily: "'DM Sans', sans-serif" }}>
+            <div className="kpi-value-sm" style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1, marginBottom: 6, fontFamily: "'DM Sans', sans-serif" }}>
               {kpi.value}
             </div>
             <div style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 500, marginBottom: 4 }}>{kpi.label}</div>
@@ -168,13 +175,13 @@ export default function Dashboard() {
       </div>
 
       {/* Charts Row */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 28 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20, marginBottom: 28 }}>
         {/* Bar Chart */}
         <div className="chart-container animate-fade-in-up stagger-5">
           <h3 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: 20 }}>
             Vendas por Quadra
           </h3>
-          <ResponsiveContainer width="100%" height={280}>
+          <ResponsiveContainer width="100%" height={isMobile ? 220 : 280}>
             <BarChart data={quadraData}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
               <XAxis dataKey="name" tick={{ fill: "var(--text-muted)", fontSize: 11 }} />
@@ -192,14 +199,14 @@ export default function Dashboard() {
           <h3 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: 20 }}>
             Distribuição dos Lotes
           </h3>
-          <ResponsiveContainer width="100%" height={280}>
+          <ResponsiveContainer width="100%" height={isMobile ? 220 : 280}>
             <PieChart>
               <Pie
                 data={pieData}
                 cx="50%"
                 cy="50%"
-                innerRadius={70}
-                outerRadius={110}
+                innerRadius={isMobile ? 60 : 70}
+                outerRadius={isMobile ? 95 : 110}
                 paddingAngle={4}
                 dataKey="value"
                 stroke="none"
@@ -211,7 +218,7 @@ export default function Dashboard() {
               <Tooltip content={<CustomTooltip />} />
             </PieChart>
           </ResponsiveContainer>
-          <div style={{ display: "flex", justifyContent: "center", gap: 24, marginTop: -8 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: isMobile ? 12 : 24, marginTop: -8 }}>
             {pieData.map((d, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ width: 10, height: 10, borderRadius: "50%", background: d.color }} />
@@ -227,7 +234,7 @@ export default function Dashboard() {
         <h3 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: 20 }}>
           Receita Mensal Prevista (Parcelas)
         </h3>
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={isMobile ? 220 : 300}>
           <AreaChart data={revenueData}>
             <defs>
               <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">

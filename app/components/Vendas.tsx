@@ -73,7 +73,7 @@ export default function Vendas() {
     <div style={{ padding: "28px 32px" }}>
       {/* Header */}
       <div className="animate-fade-in-up" style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 28, fontWeight: 800, fontFamily: "'DM Sans', sans-serif", color: "var(--text-primary)", marginBottom: 4 }}>
+        <h1 className="page-title" style={{ fontSize: 28, fontWeight: 800, fontFamily: "'DM Sans', sans-serif", color: "var(--text-primary)", marginBottom: 4 }}>
           Vendas
         </h1>
         <p style={{ color: "var(--text-muted)", fontSize: 14 }}>
@@ -85,15 +85,15 @@ export default function Vendas() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 16, marginBottom: 24 }}>
         <div className="kpi-card emerald animate-fade-in-up stagger-1">
           <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600, marginBottom: 8 }}>Total Vendas</div>
-          <div style={{ fontSize: 24, fontWeight: 800 }}>{formatCurrency(totais.valor)}</div>
+          <div className="summary-value" style={{ fontSize: 24, fontWeight: 800 }}>{formatCurrency(totais.valor)}</div>
         </div>
         <div className="kpi-card blue animate-fade-in-up stagger-2">
           <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600, marginBottom: 8 }}>Total Entradas</div>
-          <div style={{ fontSize: 24, fontWeight: 800 }}>{formatCurrency(totais.entrada)}</div>
+          <div className="summary-value" style={{ fontSize: 24, fontWeight: 800 }}>{formatCurrency(totais.entrada)}</div>
         </div>
         <div className="kpi-card purple animate-fade-in-up stagger-3">
           <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600, marginBottom: 8 }}>Qtd Contratos</div>
-          <div style={{ fontSize: 24, fontWeight: 800 }}>{totais.count}</div>
+          <div className="summary-value" style={{ fontSize: 24, fontWeight: 800 }}>{totais.count}</div>
         </div>
       </div>
 

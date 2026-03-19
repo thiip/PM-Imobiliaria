@@ -176,7 +176,7 @@ export default function Despesas() {
       {/* Header */}
       <div className="animate-fade-in-up" style={{ marginBottom: 28, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, fontFamily: "'DM Sans', sans-serif", color: "var(--text-primary)", marginBottom: 4 }}>
+          <h1 className="page-title" style={{ fontSize: 28, fontWeight: 800, fontFamily: "'DM Sans', sans-serif", color: "var(--text-primary)", marginBottom: 4 }}>
             Despesas
           </h1>
           <p style={{ color: "var(--text-muted)", fontSize: 14 }}>Controle financeiro do empreendimento</p>
@@ -195,7 +195,7 @@ export default function Despesas() {
                 <kpi.icon size={20} style={{ color: `var(--accent-${kpi.color})` }} />
               </div>
             </div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1, marginBottom: 6, fontFamily: "'DM Sans', sans-serif" }}>{kpi.value}</div>
+            <div className="kpi-value-sm" style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1, marginBottom: 6, fontFamily: "'DM Sans', sans-serif" }}>{kpi.value}</div>
             <div style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 500, marginBottom: 4 }}>{kpi.label}</div>
             <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{kpi.sub}</div>
           </div>

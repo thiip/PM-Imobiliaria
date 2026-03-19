@@ -15,7 +15,6 @@ const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: typeof Al
   VENCIDO: { color: "#EF4444", bg: "rgba(239,68,68,0.12)", icon: AlertCircle, label: "Vencido" },
   "VENCE ESTE MÊS": { color: "#F59E0B", bg: "rgba(245,158,11,0.12)", icon: Clock, label: "Vence este mês" },
   "A VENCER": { color: "#3B82F6", bg: "rgba(59,130,246,0.12)", icon: Circle, label: "A Vencer" },
-  PENDENTE: { color: "var(--text-muted)", bg: "rgba(255,255,255,0.05)", icon: Circle, label: "Pendente" },
   PAGO: { color: "#10B981", bg: "rgba(16,185,129,0.12)", icon: CheckCircle2, label: "Pago" },
 };
 
@@ -266,7 +265,7 @@ export default function Calendario() {
                   {selectedInstallments.length} parcela{selectedInstallments.length > 1 ? "s" : ""}
                 </div>
                 {selectedInstallments.map((inst, i) => {
-                  const cfg = STATUS_CONFIG[inst.status] || STATUS_CONFIG.PENDENTE;
+                  const cfg = STATUS_CONFIG[inst.status] || STATUS_CONFIG["A VENCER"];
                   const Icon = cfg.icon;
                   return (
                     <div key={i} style={{
