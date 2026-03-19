@@ -46,6 +46,7 @@ export default function Parcelas() {
     vencidas: filtered.filter(i => i.status === "VENCIDO").length,
     aVencer: filtered.filter(i => i.status === "A VENCER" || i.status === "VENCE ESTE MÊS").length,
     pagas: filtered.filter(i => i.status === "PAGO").length,
+    pendentes: filtered.filter(i => !["VENCIDO", "A VENCER", "VENCE ESTE MÊS", "PAGO"].includes(i.status)).length,
     valorTotal: filtered.reduce((s, i) => s + i.valor, 0),
     valorVencido: filtered.filter(i => i.status === "VENCIDO").reduce((s, i) => s + i.valor, 0),
     valorPago: filtered.filter(i => i.status === "PAGO").reduce((s, i) => s + i.valor, 0),
@@ -120,6 +121,13 @@ export default function Parcelas() {
           </div>
           <div className="summary-value" style={{ fontSize: 24, fontWeight: 800, color: "#34D399" }}>{summary.pagas}</div>
           <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>{formatCurrency(summary.valorPago)}</div>
+        </div>
+        <div className="kpi-card blue animate-fade-in-up stagger-4">
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <CircleDot size={16} style={{ color: "var(--accent-blue)" }} />
+            <span style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600 }}>Pendentes</span>
+          </div>
+          <div className="summary-value" style={{ fontSize: 24, fontWeight: 800 }}>{summary.pendentes}</div>
         </div>
       </div>
       <div style={{ marginBottom: 24 }}>
