@@ -1,6 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
-import { Users, TrendingUp, DollarSign, PieChart as PieIcon, ArrowUpRight } from "lucide-react";
+import { Users, TrendingUp, DollarSign, PieChart as PieIcon, ArrowUpRight, Lock, Eye, EyeOff } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 import { formatCurrency } from "../data";
 
@@ -88,7 +88,13 @@ function formatMonth(d: string) {
   return `${months[parseInt(m) - 1]}/${y.slice(2)}`;
 }
 
+const SENHA = "pm1961";
+
 export default function Retiradas() {
+  const [autenticado, setAutenticado] = useState(false);
+  const [senha, setSenha] = useState("");
+  const [senhaErro, setSenhaErro] = useState(false);
+  const [showSenha, setShowSenha] = useState(false);
   const [selectedSocio, setSelectedSocio] = useState<string>("TODOS");
 
   const totais = useMemo(() => {
@@ -119,6 +125,115 @@ export default function Retiradas() {
     return RETIRADAS;
   }, [selectedSocio]);
 
+  const saldoAcumulado = useMemo(() => {
+    let gAcc = 0, hAcc = 0, rAcc = 0;
+    return RETIRADAS.map(r => {
+      gAcc += r.giovani;
+      hAcc += r.heron;
+      rAcc += r.rosiane;
+      return { ...r, accGiovani: gAcc, accHeron: hAcc, accRosiane: rAcc, accTotal: gAcc + hAcc + rAcc };
+    });
+  }, []);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (senha === SENHA) {
+      setAutenticado(true);
+      setSenhaErro(false);
+    } else {
+      setSenhaErro(true);
+      setTimeout(() => setSenhaErro(false), 2000);
+    }
+  };
+
+  if (!autenticado) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", minHeight: "80vh", padding: 32 }}>
+        <div className="animate-fade-in-up" style={{
+          background: "var(--bg-card)",
+          borderRadius: 20,
+          padding: "48px 40px",
+          border: "1px solid var(--border-light)",
+          width: "100%",
+          maxWidth: 400,
+          textAlign: "center",
+        }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: 16,
+            background: "var(--accent-purple-soft, rgba(139,92,246,0.12))",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            margin: "0 auto 24px",
+          }}>
+            <Lock size={28} style={{ color: "#8B5CF6" }} />
+          </div>
+          <h2 style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", marginBottom: 8, fontFamily: "'DM Sans', sans-serif" }}>
+            Área Restrita
+          </h2>
+          <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 28 }}>
+            Insira a senha para acessar as retiradas dos sócios
+          </p>
+          <form onSubmit={handleLogin}>
+            <div style={{ position: "relative", marginBottom: 16 }}>
+              <input
+                type={showSenha ? "text" : "password"}
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                placeholder="Digite a senha"
+                autoFocus
+                style={{
+                  width: "100%",
+                  padding: "14px 48px 14px 16px",
+                  borderRadius: 12,
+                  border: senhaErro ? "2px solid #EF4444" : "1px solid var(--border-color)",
+                  background: "var(--bg-primary)",
+                  color: "var(--text-primary)",
+                  fontSize: 14,
+                  outline: "none",
+                  transition: "border-color 0.2s",
+                  boxSizing: "border-box",
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowSenha(!showSenha)}
+                style={{
+                  position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
+                  background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", padding: 4,
+                }}
+              >
+                {showSenha ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+            {senhaErro && (
+              <p style={{ fontSize: 12, color: "#EF4444", marginBottom: 12, fontWeight: 500 }}>
+                Senha incorreta. Tente novamente.
+              </p>
+            )}
+            <button
+              type="submit"
+              style={{
+                width: "100%",
+                padding: "14px",
+                borderRadius: 12,
+                border: "none",
+                background: "#8B5CF6",
+                color: "#fff",
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: "pointer",
+                transition: "opacity 0.2s",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
+              onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+            >
+              Acessar Retiradas
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   const getSocioValue = (r: Retirada, socio: string) => {
     switch (socio) {
       case "Giovani": return r.giovani;
@@ -142,17 +257,6 @@ export default function Retiradas() {
     );
   };
 
-  // Running balance per sócio
-  const saldoAcumulado = useMemo(() => {
-    let gAcc = 0, hAcc = 0, rAcc = 0;
-    return RETIRADAS.map(r => {
-      gAcc += r.giovani;
-      hAcc += r.heron;
-      rAcc += r.rosiane;
-      return { ...r, accGiovani: gAcc, accHeron: hAcc, accRosiane: rAcc, accTotal: gAcc + hAcc + rAcc };
-    });
-  }, []);
-
   return (
     <div style={{ padding: "28px 32px", maxWidth: 1500 }}>
       {/* Header */}
@@ -166,7 +270,7 @@ export default function Retiradas() {
       </div>
 
       {/* KPIs */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 28 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 16, marginBottom: 28 }}>
         <div className="kpi-card emerald animate-fade-in-up stagger-1">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
             <div style={{ width: 42, height: 42, borderRadius: 12, background: "var(--accent-emerald-soft, rgba(16,185,129,0.12))", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -340,7 +444,7 @@ export default function Retiradas() {
         <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", marginBottom: 20, fontFamily: "'DM Sans', sans-serif" }}>
           Evolução do Saldo Acumulado
         </h3>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
           {SOCIOS.map(socio => {
             const values = saldoAcumulado.map(r => {
               const acc = socio.nome === "Rosiane" ? r.accRosiane : socio.nome === "Heron" ? r.accHeron : r.accGiovani;

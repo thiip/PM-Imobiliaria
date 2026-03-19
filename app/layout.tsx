@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "ERP Vista Alegre - Padilha Madeira Empreendimentos",
-  description: "Sistema de controle de vendas do Loteamento Vista Alegre 2",
+  description: "Sistema de controle de vendas do Loteamento Vista Alegre",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

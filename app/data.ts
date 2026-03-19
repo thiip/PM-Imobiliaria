@@ -514,6 +514,23 @@ export function getSales(): Sale[] { return salesData; }
 export function getLots(): Lot[] { return lotsData; }
 export function getActiveSales(): Sale[] { return salesData.filter(s => s.situacao !== 'CANCELADO'); }
 
+export function getNextSaleId(): number {
+  return Math.max(...salesData.map(s => s.id), 0) + 1;
+}
+
+export function addSale(sale: Sale): void {
+  salesData.push(sale);
+}
+
+export function updateLotStatus(quadra: number, lote: number, situacao: string, proprietario: string, cpf: string): void {
+  const lot = lotsData.find(l => l.quadra === quadra && l.lote === lote);
+  if (lot) {
+    lot.situacao = situacao;
+    lot.proprietario = proprietario;
+    lot.cpf = cpf;
+  }
+}
+
 export function getExpensesFromStorage(): Expense[] {
   if (typeof window === 'undefined') return defaultExpenses;
   const stored = localStorage.getItem('erp_expenses_v2');
@@ -527,7 +544,7 @@ export function saveExpensesToStorage(expenses: Expense[]) {
 }
 
 // Payment tracking via localStorage
-function getInstallmentKey(saleId: number, parcela: number): string {
+export function getInstallmentKey(saleId: number, parcela: number): string {
   return `${saleId}-${parcela}`;
 }
 

@@ -98,7 +98,7 @@ export default function Parcelas() {
       </div>
 
       {/* Summary cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 16, marginBottom: 24 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 16, marginBottom: 24 }}>
         <div className="kpi-card red animate-fade-in-up stagger-1">
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
             <AlertTriangle size={16} style={{ color: "var(--accent-red)" }} />

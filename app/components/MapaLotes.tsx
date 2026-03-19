@@ -1,7 +1,7 @@
 "use client";
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
-import { MapPin, ZoomIn, ZoomOut, Grid3x3, Map as MapIcon, RotateCcw } from "lucide-react";
-import { getLots, getSales, formatCurrency, perimeterCoords } from "../data";
+import { MapPin, ZoomIn, ZoomOut, Grid3x3, Map as MapIcon, RotateCcw, ExternalLink, Navigation, Plus, FileText, Calculator, X } from "lucide-react";
+import { getLots, getSales, formatCurrency, perimeterCoords, addSale, updateLotStatus, getNextSaleId } from "../data";
 import { LOT_POLYGONS } from "../lotPolygons";
 
 const STATUS_COLORS: Record<string, { fill: string; stroke: string }> = {
@@ -22,6 +22,40 @@ const STATUS_COLORS_SELECTED: Record<string, { fill: string; stroke: string }> =
   quitado: { fill: "rgba(139,92,246,0.75)", stroke: "#8B5CF6" },
 };
 
+// UTM SIRGAS2000 Zone 23S ranges (from Memorial Descritivo)
+const UTM_E_MIN = 750572.65, UTM_E_MAX = 751169.75;
+const UTM_N_MIN = 7918359.94, UTM_N_MAX = 7918857.54;
+
+function svgToLatLng(svgX: number, svgY: number): [number, number] {
+  const e = UTM_E_MIN + (svgX / 1000) * (UTM_E_MAX - UTM_E_MIN);
+  const n = UTM_N_MAX - (svgY / 1000) * (UTM_N_MAX - UTM_N_MIN);
+  // UTM Zone 23S to WGS84
+  const a = 6378137.0, f = 1 / 298.257223563;
+  const e2 = 2 * f - f * f, ep2 = e2 / (1 - e2), k0 = 0.9996;
+  const x = e - 500000.0, y = n - 10000000.0;
+  const M = y / k0;
+  const mu = M / (a * (1 - e2 / 4 - 3 * e2 * e2 / 64 - 5 * e2 * e2 * e2 / 256));
+  const e1 = (1 - Math.sqrt(1 - e2)) / (1 + Math.sqrt(1 - e2));
+  const phi1 = mu + (3 * e1 / 2 - 27 * e1 * e1 * e1 / 32) * Math.sin(2 * mu) + (21 * e1 * e1 / 16 - 55 * e1 * e1 * e1 * e1 / 32) * Math.sin(4 * mu) + (151 * e1 * e1 * e1 / 96) * Math.sin(6 * mu);
+  const N1 = a / Math.sqrt(1 - e2 * Math.sin(phi1) ** 2);
+  const T1 = Math.tan(phi1) ** 2;
+  const C1 = ep2 * Math.cos(phi1) ** 2;
+  const R1 = a * (1 - e2) / (1 - e2 * Math.sin(phi1) ** 2) ** 1.5;
+  const D = x / (N1 * k0);
+  const lat = phi1 - (N1 * Math.tan(phi1) / R1) * (D * D / 2 - (5 + 3 * T1 + 10 * C1 - 4 * C1 * C1 - 9 * ep2) * D ** 4 / 24 + (61 + 90 * T1 + 298 * C1 + 45 * T1 * T1 - 252 * ep2 - 3 * C1 * C1) * D ** 6 / 720);
+  const lon0 = (23 - 1) * 6 - 180 + 3;
+  const lon = lon0 * Math.PI / 180 + (D - (1 + 2 * T1 + C1) * D ** 3 / 6 + (5 - 2 * C1 + 28 * T1 - 3 * C1 * C1 + 8 * ep2 + 24 * T1 * T1) * D ** 5 / 120) / Math.cos(phi1);
+  return [lat * 180 / Math.PI, lon * 180 / Math.PI];
+}
+
+function getLotLatLng(quadra: number, lote: number): [number, number] | null {
+  const key = `QD${quadra}_LT${lote}`;
+  const poly = LOT_POLYGONS[key];
+  if (!poly || poly.length === 0) return null;
+  const [cx, cy] = polygonCentroid(poly);
+  return svgToLatLng(cx, cy);
+}
+
 function polygonCentroid(pts: number[][]): [number, number] {
   let cx = 0, cy = 0;
   for (const [x, y] of pts) { cx += x; cy += y; }
@@ -33,8 +67,9 @@ function polygonToSvgPath(pts: number[][]): string {
 }
 
 export default function MapaLotes() {
-  const lots = useMemo(() => getLots(), []);
-  const sales = useMemo(() => getSales(), []);
+  const [dataVersion, setDataVersion] = useState(0);
+  const lots = useMemo(() => getLots(), [dataVersion]);
+  const sales = useMemo(() => getSales(), [dataVersion]);
   const [selectedLot, setSelectedLot] = useState<{ quadra: number; lote: number } | null>(null);
   const [filterQuadra, setFilterQuadra] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<"map" | "grid">("map");
@@ -42,6 +77,11 @@ export default function MapaLotes() {
   const [hoveredLot, setHoveredLot] = useState<string | null>(null);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
+  const [showSaleForm, setShowSaleForm] = useState(false);
+  const [saleForm, setSaleForm] = useState({
+    nome: "", cpf: "", valor: "", entrada: "", dataEntrada: "",
+    numParcelas: "", dataPrimeiraParcela: "", juros: "0", obs: "",
+  });
   const panStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
   const gridRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const svgContainerRef = useRef<HTMLDivElement>(null);
@@ -77,6 +117,56 @@ export default function MapaLotes() {
   };
 
   const filteredQuadras = filterQuadra ? quadras.filter(([q]) => q === filterQuadra) : quadras;
+
+  // Sale form calculations
+  const saleCalc = useMemo(() => {
+    const valor = parseFloat(saleForm.valor) || 0;
+    const entrada = parseFloat(saleForm.entrada) || 0;
+    const n = parseInt(saleForm.numParcelas) || 0;
+    const jurosMensal = parseFloat(saleForm.juros) || 0;
+    const saldo = Math.max(0, valor - entrada);
+    let valorParcela = 0;
+    let totalComJuros = saldo;
+    if (n > 0 && saldo > 0) {
+      if (jurosMensal > 0) {
+        const i = jurosMensal / 100;
+        valorParcela = saldo * (i * Math.pow(1 + i, n)) / (Math.pow(1 + i, n) - 1);
+        totalComJuros = valorParcela * n;
+      } else {
+        valorParcela = saldo / n;
+      }
+    }
+    return { saldo, valorParcela, totalComJuros, jurosTotal: totalComJuros - saldo };
+  }, [saleForm.valor, saleForm.entrada, saleForm.numParcelas, saleForm.juros]);
+
+  const handleSaleSubmit = () => {
+    if (!selectedLotData?.lot) return;
+    const lot = selectedLotData.lot;
+    const id = getNextSaleId();
+    const newSale = {
+      id,
+      nome: saleForm.nome.toUpperCase(),
+      cpf: saleForm.cpf,
+      quadra: lot.quadra,
+      lote: lot.lote,
+      area: lot.area,
+      valor: parseFloat(saleForm.valor) || 0,
+      entrada: parseFloat(saleForm.entrada) || 0,
+      dataEntrada: saleForm.dataEntrada || null,
+      numParcelas: parseInt(saleForm.numParcelas) || 0,
+      dataPrimeiraParcela: saleForm.dataPrimeiraParcela || null,
+      valorParcela: Math.round(saleCalc.valorParcela * 100) / 100,
+      situacao: "ATIVO" as const,
+      obs: saleForm.obs,
+    };
+    addSale(newSale);
+    updateLotStatus(lot.quadra, lot.lote, "VENDIDO", saleForm.nome.toUpperCase(), saleForm.cpf);
+    setShowSaleForm(false);
+    setSaleForm({ nome: "", cpf: "", valor: "", entrada: "", dataEntrada: "", numParcelas: "", dataPrimeiraParcela: "", juros: "0", obs: "" });
+    setDataVersion(v => v + 1);
+  };
+
+  const canSubmitSale = saleForm.nome.trim() && saleForm.cpf.trim() && parseFloat(saleForm.valor) > 0 && parseFloat(saleForm.entrada) >= 0 && saleForm.dataEntrada && parseInt(saleForm.numParcelas) > 0 && saleForm.dataPrimeiraParcela;
 
   const stats = useMemo(() => {
     const vendidos = lots.filter(l => l.situacao === "VENDIDO").length;
@@ -172,7 +262,7 @@ export default function MapaLotes() {
             Mapa de Lotes
           </h1>
           <p style={{ color: "var(--text-muted)", fontSize: 14 }}>
-            Loteamento Vista Alegre 2 &middot; {stats.total} lotes &middot; 130.850 m²
+            Loteamento Vista Alegre &middot; {stats.total} lotes &middot; 130.850 m²
           </p>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -478,6 +568,48 @@ export default function MapaLotes() {
               <DetailRow label="Área" value={selectedLotData.lot.area > 0 ? `${selectedLotData.lot.area} m²` : "-"} />
               <DetailRow label="Inscrição" value={selectedLotData.lot.inscricao || "-"} />
 
+              {(() => {
+                const coords = getLotLatLng(selectedLotData.lot.quadra, selectedLotData.lot.lote);
+                if (!coords) return null;
+                const [lat, lng] = coords;
+                const mapsUrl = `https://www.google.com/maps?q=${lat.toFixed(6)},${lng.toFixed(6)}&z=19&t=s`;
+                return (
+                  <>
+                    <DetailRow label="Coordenadas" value={
+                      <span style={{ fontSize: 11, fontFamily: "'DM Sans', monospace" }}>
+                        {lat.toFixed(6)}, {lng.toFixed(6)}
+                      </span>
+                    } />
+                    <a
+                      href={mapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 8,
+                        padding: "10px 14px",
+                        borderRadius: 10,
+                        background: "rgba(59,130,246,0.12)",
+                        color: "#3B82F6",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        textDecoration: "none",
+                        transition: "background 0.2s",
+                        cursor: "pointer",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(59,130,246,0.22)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(59,130,246,0.12)")}
+                    >
+                      <Navigation size={14} />
+                      Ver no Google Maps
+                      <ExternalLink size={12} />
+                    </a>
+                  </>
+                );
+              })()}
+
               {selectedLotData.lot.proprietario && (
                 <>
                   <div style={{ height: 1, background: "var(--border-color)", margin: "2px 0" }} />
@@ -500,8 +632,210 @@ export default function MapaLotes() {
                   {selectedLotData.sale.obs && <DetailRow label="Obs" value={selectedLotData.sale.obs} />}
                 </>
               )}
+
+              {/* Botão Cadastrar Venda (só para lotes disponíveis) */}
+              {selectedLotData.lot.situacao === "IMOB." && !selectedLotData.sale && (
+                <>
+                  <div style={{ height: 1, background: "var(--border-color)", margin: "4px 0" }} />
+                  <button
+                    onClick={() => setShowSaleForm(true)}
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                      width: "100%", padding: "12px", borderRadius: 12, border: "none",
+                      background: "var(--accent-emerald)", color: "#fff",
+                      fontSize: 13, fontWeight: 700, cursor: "pointer", transition: "all 0.2s",
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
+                    onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
+                  >
+                    <Plus size={16} /> Cadastrar Venda
+                  </button>
+                </>
+              )}
             </div>
           </div>
+        )}
+
+        {/* Modal de Nova Venda */}
+        {showSaleForm && selectedLotData?.lot && (
+          <>
+            <div onClick={() => setShowSaleForm(false)} style={{
+              position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
+              zIndex: 100,
+            }} />
+            <div style={{
+              position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
+              width: "95%", maxWidth: 500, maxHeight: "90vh", overflowY: "auto",
+              background: "rgba(20,18,22,0.95)", backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)",
+              border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20,
+              padding: "28px 24px", zIndex: 101, boxShadow: "0 25px 60px rgba(0,0,0,0.6)",
+            }}>
+              {/* Header */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+                <div>
+                  <h3 style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", fontFamily: "'DM Sans', sans-serif" }}>
+                    Nova Venda
+                  </h3>
+                  <p style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                    QD {selectedLotData.lot.quadra} / LT {selectedLotData.lot.lote} · {selectedLotData.lot.area} m² · {selectedLotData.lot.rua}
+                  </p>
+                </div>
+                <button onClick={() => setShowSaleForm(false)} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}>
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Form */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--accent-emerald)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                  Dados do Comprador
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div>
+                    <label style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Nome *</label>
+                    <input type="text" placeholder="Nome completo" value={saleForm.nome}
+                      onChange={e => setSaleForm(f => ({ ...f, nome: e.target.value }))}
+                      style={{ width: "100%", padding: "10px 12px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, color: "var(--text-primary)", fontSize: 13 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>CPF *</label>
+                    <input type="text" placeholder="000.000.000-00" value={saleForm.cpf}
+                      onChange={e => setSaleForm(f => ({ ...f, cpf: e.target.value }))}
+                      style={{ width: "100%", padding: "10px 12px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, color: "var(--text-primary)", fontSize: 13 }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "2px 0" }} />
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--accent-blue)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                  Valores e Pagamento
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div>
+                    <label style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Valor Total (R$) *</label>
+                    <input type="number" placeholder="130000" value={saleForm.valor}
+                      onChange={e => setSaleForm(f => ({ ...f, valor: e.target.value }))}
+                      style={{ width: "100%", padding: "10px 12px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, color: "var(--text-primary)", fontSize: 13 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Entrada (R$) *</label>
+                    <input type="number" placeholder="20000" value={saleForm.entrada}
+                      onChange={e => setSaleForm(f => ({ ...f, entrada: e.target.value }))}
+                      style={{ width: "100%", padding: "10px 12px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, color: "var(--text-primary)", fontSize: 13 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Data da Entrada *</label>
+                    <input type="date" value={saleForm.dataEntrada}
+                      onChange={e => setSaleForm(f => ({ ...f, dataEntrada: e.target.value }))}
+                      style={{ width: "100%", padding: "10px 12px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, color: "var(--text-primary)", fontSize: 13 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Nº de Parcelas *</label>
+                    <input type="number" placeholder="18" value={saleForm.numParcelas}
+                      onChange={e => setSaleForm(f => ({ ...f, numParcelas: e.target.value }))}
+                      style={{ width: "100%", padding: "10px 12px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, color: "var(--text-primary)", fontSize: 13 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Data 1ª Parcela *</label>
+                    <input type="date" value={saleForm.dataPrimeiraParcela}
+                      onChange={e => setSaleForm(f => ({ ...f, dataPrimeiraParcela: e.target.value }))}
+                      style={{ width: "100%", padding: "10px 12px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, color: "var(--text-primary)", fontSize: 13 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Juros (% a.m.)</label>
+                    <input type="number" step="0.1" placeholder="0" value={saleForm.juros}
+                      onChange={e => setSaleForm(f => ({ ...f, juros: e.target.value }))}
+                      style={{ width: "100%", padding: "10px 12px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, color: "var(--text-primary)", fontSize: 13 }}
+                    />
+                  </div>
+                </div>
+
+                {/* Cálculos em tempo real */}
+                {saleCalc.saldo > 0 && parseInt(saleForm.numParcelas) > 0 && (
+                  <div style={{
+                    background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.15)",
+                    borderRadius: 12, padding: "14px 16px",
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                      <Calculator size={14} style={{ color: "var(--accent-emerald)" }} />
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "var(--accent-emerald)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Simulação</span>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                      <div>
+                        <div style={{ fontSize: 10, color: "var(--text-muted)" }}>Saldo Financiado</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{formatCurrency(saleCalc.saldo)}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 10, color: "var(--text-muted)" }}>Valor da Parcela</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "#C8E64A" }}>{formatCurrency(saleCalc.valorParcela)}</div>
+                      </div>
+                      {saleCalc.jurosTotal > 0 && (
+                        <>
+                          <div>
+                            <div style={{ fontSize: 10, color: "var(--text-muted)" }}>Total com Juros</div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{formatCurrency(saleCalc.totalComJuros)}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 10, color: "var(--text-muted)" }}>Total Juros</div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: "#F59E0B" }}>{formatCurrency(saleCalc.jurosTotal)}</div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Upload e Obs */}
+                <div>
+                  <label style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Upload do Contrato (PDF)</label>
+                  <div style={{
+                    display: "flex", alignItems: "center", gap: 10, padding: "12px 14px",
+                    background: "rgba(255,255,255,0.03)", border: "1px dashed rgba(255,255,255,0.12)",
+                    borderRadius: 10, cursor: "pointer",
+                  }}>
+                    <FileText size={18} style={{ color: "var(--text-muted)" }} />
+                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Arraste ou clique para anexar</span>
+                  </div>
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Observações</label>
+                  <textarea placeholder="Notas sobre a venda..." value={saleForm.obs}
+                    onChange={e => setSaleForm(f => ({ ...f, obs: e.target.value }))}
+                    rows={2}
+                    style={{ width: "100%", padding: "10px 12px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, color: "var(--text-primary)", fontSize: 13, resize: "vertical" }}
+                  />
+                </div>
+
+                {/* Botões */}
+                <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+                  <button onClick={() => setShowSaleForm(false)}
+                    style={{
+                      flex: 1, padding: "12px", borderRadius: 12,
+                      background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)",
+                      color: "var(--text-secondary)", fontSize: 13, fontWeight: 600, cursor: "pointer",
+                    }}>
+                    Cancelar
+                  </button>
+                  <button onClick={handleSaleSubmit} disabled={!canSubmitSale}
+                    style={{
+                      flex: 2, padding: "12px", borderRadius: 12, border: "none",
+                      background: canSubmitSale ? "var(--accent-emerald)" : "rgba(16,185,129,0.3)",
+                      color: "#fff", fontSize: 13, fontWeight: 700,
+                      cursor: canSubmitSale ? "pointer" : "not-allowed", transition: "all 0.2s",
+                    }}>
+                    Salvar Venda
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>

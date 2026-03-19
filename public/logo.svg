@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 280" fill="none">
+  <defs>
+    <mask id="pm-mask">
+      <rect width="260" height="280" fill="white"/>
+      <circle cx="83" cy="50" r="21" fill="black"/>
+    </mask>
+  </defs>
+  <g mask="url(#pm-mask)" fill="white">
+    <!-- M shape -->
+    <path d="M0,280 L0,121 L118,215 L200,0 L260,0 L260,280 L200,280 L200,58 L118,215 L30,121 L30,280Z"/>
+    <!-- P circle (location pin) -->
+    <circle cx="83" cy="63" r="58"/>
+  </g>
+</svg>

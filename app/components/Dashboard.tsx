@@ -112,15 +112,15 @@ export default function Dashboard() {
       {/* Header */}
       <div className="animate-fade-in-up" style={{ marginBottom: 32 }}>
         <h1 style={{ fontSize: 28, fontWeight: 800, fontFamily: "'DM Sans', sans-serif", color: "var(--text-primary)", marginBottom: 4 }}>
-          Dashboard
+          Painel
         </h1>
         <p style={{ color: "var(--text-muted)", fontSize: 14 }}>
-          Visão geral do Loteamento Vista Alegre 2
+          Visão geral do Loteamento Vista Alegre
         </p>
       </div>
 
       {/* KPIs - Lotes */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 16, marginBottom: 16 }}>
         {kpis.map((kpi, i) => (
           <div key={i} className={`kpi-card ${kpi.color} animate-fade-in-up stagger-${i + 1}`}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
@@ -144,7 +144,7 @@ export default function Dashboard() {
       </div>
 
       {/* KPIs - Financeiro */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 28 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 16, marginBottom: 28 }}>
         {kpisFinanceiro.map((kpi, i) => (
           <div key={i} className={`kpi-card ${kpi.color} animate-fade-in-up stagger-${i + 5}`}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>

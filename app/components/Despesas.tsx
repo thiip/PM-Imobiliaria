@@ -187,7 +187,7 @@ export default function Despesas() {
       </div>
 
       {/* ═══ KPIs ═══ */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 16, marginBottom: 28 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 16, marginBottom: 28 }}>
         {kpis.map((kpi, i) => (
           <div key={i} className={`kpi-card ${kpi.color} animate-fade-in-up stagger-${i + 1}`}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
@@ -342,7 +342,7 @@ export default function Despesas() {
       {showForm && (
         <div className="chart-container animate-fade-in-up" style={{ marginBottom: 20 }}>
           <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Nova Despesa</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginBottom: 16 }}>
             <div>
               <label style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Data</label>
               <input type="date" value={newExpense.data} onChange={e => setNewExpense({ ...newExpense, data: e.target.value })} style={{ width: "100%" }} />
