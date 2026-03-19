@@ -394,7 +394,7 @@ export default function MapaLotes() {
           {viewMode === "grid" && (
             <div>
               {filteredQuadras.map(([quadra, quadraLots]) => (
-                <div key={quadra} className="chart-container animate-fade-in-up" style={{ marginBottom: 16, padding: viewMode === "map" ? "12px 16px" : "16px 20px" }}>
+                <div key={quadra} className="chart-container animate-fade-in-up" style={{ marginBottom: 16, padding: "16px 20px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                     <div style={{
                       background: selectedLot?.quadra === quadra ? "var(--accent-emerald)" : "var(--accent-emerald-soft)",

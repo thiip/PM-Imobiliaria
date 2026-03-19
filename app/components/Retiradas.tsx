@@ -243,7 +243,7 @@ export default function Retiradas() {
                   <Cell key={idx} fill={entry.color} />
                 ))}
               </Pie>
-              <Tooltip formatter={(v: number) => formatCurrency(v)} />
+              <Tooltip formatter={(v) => formatCurrency(Number(v))} />
             </PieChart>
           </ResponsiveContainer>
           <div style={{ display: "flex", justifyContent: "center", gap: 20, marginTop: 12 }}>
