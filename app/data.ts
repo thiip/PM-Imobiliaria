@@ -522,6 +522,24 @@ export function addSale(sale: Sale): void {
   salesData.push(sale);
 }
 
+export function quitarSale(saleId: number): void {
+  const sale = salesData.find(s => s.id === saleId);
+  if (!sale) return;
+  // Update sale status
+  sale.situacao = 'QUITADO';
+  // Update lot status
+  const lot = lotsData.find(l => l.quadra === sale.quadra && l.lote === sale.lote);
+  if (lot) {
+    lot.situacao = 'QUITADO';
+  }
+  // Mark all remaining installments as paid
+  const paid = getPaidInstallments();
+  for (let p = 1; p <= sale.numParcelas; p++) {
+    paid.add(getInstallmentKey(saleId, p));
+  }
+  savePaidInstallments(paid);
+}
+
 export function updateLotStatus(quadra: number, lote: number, situacao: string, proprietario: string, cpf: string): void {
   const lot = lotsData.find(l => l.quadra === quadra && l.lote === lote);
   if (lot) {

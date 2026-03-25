@@ -1,16 +1,18 @@
 "use client";
 import { Fragment, useMemo, useState } from "react";
 import { Search, Filter, Download, Eye, ChevronDown, CheckCircle, Clock, AlertTriangle, Calendar } from "lucide-react";
-import { getSales, formatCurrency, formatDate, generateInstallments, getPaidInstallments, savePaidInstallments, getInstallmentKey, type Installment } from "../data";
+import { getSales, formatCurrency, formatDate, generateInstallments, getPaidInstallments, savePaidInstallments, getInstallmentKey, quitarSale, type Installment } from "../data";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 export default function Vendas() {
-  const sales = useMemo(() => getSales(), []);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("TODOS");
   const [selectedSale, setSelectedSale] = useState<number | null>(null);
   const [paidSet, setPaidSet] = useState(() => getPaidInstallments());
+  const [confirmQuitar, setConfirmQuitar] = useState<number | null>(null);
+  const [salesVersion, setSalesVersion] = useState(0);
+  const sales = useMemo(() => getSales(), [salesVersion]);
 
   const allInstallments = useMemo(() => generateInstallments(paidSet), [paidSet]);
 
@@ -28,6 +30,14 @@ export default function Vendas() {
     }
     savePaidInstallments(newPaid);
     setPaidSet(newPaid);
+  };
+
+  const handleQuitar = (saleId: number) => {
+    quitarSale(saleId);
+    setPaidSet(getPaidInstallments());
+    setSalesVersion(v => v + 1);
+    setConfirmQuitar(null);
+    setSelectedSale(null);
   };
 
   const statusIcon = (status: Installment['status']) => {
@@ -208,6 +218,31 @@ export default function Vendas() {
                                 <div style={{ fontSize: 13, fontWeight: 600, color: totalRestante > 0 ? "var(--amber)" : "var(--emerald)" }}>{formatCurrency(totalRestante)}</div>
                               </div>
                             </div>
+                            {s.situacao === 'ATIVO' && totalRestante > 0 && (
+                              <div style={{ marginTop: 16 }}>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setConfirmQuitar(s.id); }}
+                                  style={{
+                                    background: "linear-gradient(135deg, #8B5CF6, #7C3AED)",
+                                    color: "#fff",
+                                    border: "none",
+                                    borderRadius: 10,
+                                    padding: "10px 24px",
+                                    fontSize: 13,
+                                    fontWeight: 700,
+                                    cursor: "pointer",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: 8,
+                                    transition: "all 0.2s",
+                                    boxShadow: "0 2px 8px rgba(139,92,246,0.3)",
+                                  }}
+                                >
+                                  <CheckCircle size={16} />
+                                  Quitar Lote
+                                </button>
+                              </div>
+                            )}
                             {s.obs && (
                               <div style={{ marginTop: 12, fontSize: 12, color: "var(--text-secondary)" }}>
                                 <span style={{ fontWeight: 600 }}>Obs:</span> {s.obs}
@@ -316,6 +351,103 @@ export default function Vendas() {
           </table>
         </div>
       </div>
+
+      {/* Modal de Confirmação de Quitação */}
+      {confirmQuitar !== null && (() => {
+        const sale = sales.find(s => s.id === confirmQuitar);
+        if (!sale) return null;
+        const parcelas = getInstallmentsForSale(sale.id);
+        const restantes = parcelas.filter(p => p.status !== 'PAGO');
+        const valorRestante = restantes.reduce((acc, p) => acc + p.valor, 0);
+        return (
+          <div
+            onClick={() => setConfirmQuitar(null)}
+            style={{
+              position: "fixed", inset: 0, zIndex: 9999,
+              background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{
+                background: "var(--bg-card)", borderRadius: 16,
+                padding: "32px", maxWidth: 440, width: "90%",
+                boxShadow: "0 20px 60px rgba(0,0,0,0.4)",
+                border: "1px solid var(--border-light)",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+                <div style={{
+                  width: 44, height: 44, borderRadius: 12,
+                  background: "rgba(139,92,246,0.15)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <CheckCircle size={22} style={{ color: "#8B5CF6" }} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
+                    Confirmar Quitação
+                  </h3>
+                  <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>
+                    Esta ação não pode ser desfeita
+                  </p>
+                </div>
+              </div>
+
+              <div style={{
+                background: "var(--bg-surface)", borderRadius: 10,
+                padding: 16, marginBottom: 20,
+                border: "1px solid var(--border)",
+              }}>
+                <div style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 8 }}>
+                  <strong>{sale.nome}</strong>
+                </div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>
+                  Lote: QD{sale.quadra} / LT{sale.lote}
+                </div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>
+                  Parcelas restantes: <strong>{restantes.length}</strong> de {sale.numParcelas}
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#8B5CF6", marginTop: 8 }}>
+                  Valor a quitar: {formatCurrency(valorRestante)}
+                </div>
+              </div>
+
+              <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 20, lineHeight: 1.5 }}>
+                Ao confirmar, todas as {restantes.length} parcelas pendentes serão marcadas como pagas
+                e o status do lote será alterado para <strong>QUITADO</strong>.
+              </p>
+
+              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+                <button
+                  onClick={() => setConfirmQuitar(null)}
+                  style={{
+                    background: "transparent", border: "1px solid var(--border)",
+                    borderRadius: 10, padding: "10px 20px",
+                    fontSize: 13, fontWeight: 600, color: "var(--text-secondary)",
+                    cursor: "pointer",
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => handleQuitar(confirmQuitar)}
+                  style={{
+                    background: "linear-gradient(135deg, #8B5CF6, #7C3AED)",
+                    color: "#fff", border: "none",
+                    borderRadius: 10, padding: "10px 24px",
+                    fontSize: 13, fontWeight: 700, cursor: "pointer",
+                    boxShadow: "0 2px 8px rgba(139,92,246,0.3)",
+                  }}
+                >
+                  Confirmar Quitação
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
