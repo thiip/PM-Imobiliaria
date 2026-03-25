@@ -38,7 +38,7 @@ export default function Dashboard() {
   const valorVencido = installments.filter(i => i.status === "VENCIDO").reduce((s, i) => s + i.valor, 0);
   const parcelasEsteMes = installments.filter(i => i.status === "VENCE ESTE MÊS");
   const valorEsteMes = parcelasEsteMes.reduce((s, i) => s + i.valor, 0);
-  const pctVendido = ((lotesVendidos + lotesQuitados) / totalLotes * 100);
+  const pctVendido = totalLotes > 0 ? ((lotesVendidos + lotesQuitados) / totalLotes * 100) : 0;
 
   // Total Recebido = Entradas + Boletos Pagos (dados reais das planilhas)
   const totalRecebido = totalEntradas + TOTAL_RECEITAS_BOLETOS;

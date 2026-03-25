@@ -78,14 +78,20 @@ const RETIRADAS: Retirada[] = [
 ];
 
 function formatDate(d: string) {
-  const [y, m, day] = d.split("-");
+  const parts = d.split("-");
+  if (parts.length < 3) return d;
+  const [y, m, day] = parts;
   return `${day}/${m}/${y}`;
 }
 
 function formatMonth(d: string) {
   const months = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-  const [y, m] = d.split("-");
-  return `${months[parseInt(m) - 1]}/${y.slice(2)}`;
+  const parts = d.split("-");
+  if (parts.length < 2) return d;
+  const [y, m] = parts;
+  const idx = parseInt(m) - 1;
+  if (idx < 0 || idx > 11) return d;
+  return `${months[idx]}/${y.slice(2)}`;
 }
 
 const SENHA = "pm1961";
@@ -122,7 +128,11 @@ export default function Retiradas() {
 
   const filteredRetiradas = useMemo(() => {
     if (selectedSocio === "TODOS") return RETIRADAS;
-    return RETIRADAS;
+    const key = selectedSocio.toLowerCase() as keyof typeof RETIRADAS[0];
+    return RETIRADAS.filter(r => {
+      const val = r[key];
+      return typeof val === 'number' && val > 0;
+    });
   }, [selectedSocio]);
 
   const saldoAcumulado = useMemo(() => {
@@ -301,7 +311,7 @@ export default function Retiradas() {
                 {formatCurrency(total)}
               </div>
               <div style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 500, marginBottom: 4 }}>{socio.nome}</div>
-              <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{((total / totais.totalGeral) * 100).toFixed(1)}% do total</div>
+              <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{totais.totalGeral > 0 ? ((total / totais.totalGeral) * 100).toFixed(1) : "0.0"}% do total</div>
             </div>
           );
         })}

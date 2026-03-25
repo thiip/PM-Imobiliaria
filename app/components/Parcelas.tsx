@@ -4,21 +4,14 @@ import { Search, AlertTriangle, Clock, CheckCircle2, CircleDot, Check, X } from 
 import { generateInstallments, formatCurrency, getPaidInstallments, savePaidInstallments } from "../data";
 
 export default function Parcelas() {
-  const [paidSet, setPaidSet] = useState<Set<string>>(new Set());
-  const [loaded, setLoaded] = useState(false);
+  const [paidSet, setPaidSet] = useState<Set<string>>(() => getPaidInstallments());
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("TODOS");
   const [filterMonth, setFilterMonth] = useState<string>("TODOS");
 
-  useEffect(() => {
-    setPaidSet(getPaidInstallments());
-    setLoaded(true);
-  }, []);
-
   const installments = useMemo(() => {
-    if (!loaded) return [];
     return generateInstallments(paidSet);
-  }, [paidSet, loaded]);
+  }, [paidSet]);
 
   const months = useMemo(() => {
     const m = new Set<string>();

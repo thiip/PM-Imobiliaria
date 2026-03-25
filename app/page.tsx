@@ -189,17 +189,19 @@ function LoginScreen({ onLogin }: { onLogin: (nome: string) => void }) {
 }
 
 export default function Home() {
-  const [loggedUser, setLoggedUser] = useState<string | null>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('erp_logged_user');
-    }
-    return null;
-  });
+  const [loggedUser, setLoggedUser] = useState<string | null>(null);
   const [active, setActive] = useState("dashboard");
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('erp_logged_user');
+    if (stored) setLoggedUser(stored);
+    setHydrated(true);
+  }, []);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -237,6 +239,8 @@ export default function Home() {
     setLoggedUser(null);
     setActive("dashboard");
   };
+
+  if (!hydrated) return null;
 
   if (!loggedUser) {
     return <LoginScreen onLogin={(nome) => { localStorage.setItem('erp_logged_user', nome); setLoggedUser(nome); }} />;
