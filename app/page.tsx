@@ -189,7 +189,12 @@ function LoginScreen({ onLogin }: { onLogin: (nome: string) => void }) {
 }
 
 export default function Home() {
-  const [loggedUser, setLoggedUser] = useState<string | null>(null);
+  const [loggedUser, setLoggedUser] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('erp_logged_user');
+    }
+    return null;
+  });
   const [active, setActive] = useState("dashboard");
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -228,12 +233,13 @@ export default function Home() {
   const activeLabel = active === "calendario" ? "Calendário" : (navItems.find(n => n.id === active)?.label || "Dashboard");
 
   const handleLogout = () => {
+    localStorage.removeItem('erp_logged_user');
     setLoggedUser(null);
     setActive("dashboard");
   };
 
   if (!loggedUser) {
-    return <LoginScreen onLogin={(nome) => setLoggedUser(nome)} />;
+    return <LoginScreen onLogin={(nome) => { localStorage.setItem('erp_logged_user', nome); setLoggedUser(nome); }} />;
   }
 
   const bottomNavItems = navItems.slice(0, 4); // Painel, Vendas, Parcelas, Mapa
